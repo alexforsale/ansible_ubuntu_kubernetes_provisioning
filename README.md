@@ -1,15 +1,15 @@
 # Ansible Playbook for Kubernetes 
 
 ## Add ansible inventory
-I set the hosts in `/etc/hosts`.
+This is set in the _ansible_host_. I set the hosts in `/etc/hosts`. All my hosts are on the same subnet.
 ``` hosts-file
 # Static table lookup for hostnames.
 # See hosts(5) for details.
 
-<node_ip>     kubenode1.local kubenode1
-<node_ip>     kubenode2.local kubenode2
-<node_ip>     kubenode3.local kubenode3
-<node_ip>     kubenode4.local kubenode4
+10.80.1.98     kubenode1.local kubenode1
+10.80.1.97     kubenode2.local kubenode2
+10.80.1.96     kubenode3.local kubenode3
+10.80.1.95     kubenode4.local kubenode4
 ```
 
 And include them in the `hosts.yml`. The location of the file is configured in the `ansible.cfg` file.
@@ -19,6 +19,74 @@ And include them in the `hosts.yml`. The location of the file is configured in t
 inventory=./hosts.yml
 ```
 
+```yml
+all:
+  children:
+    nodes:
+      hosts:
+        kubenode1:
+          ansible_user: kubedeveloper
+          apiserver_address: 10.80.1.98
+        kubenode2:
+          ansible_user: kubedeveloper
+        kubenode3:
+          ansible_user: kubedeveloper
+        kubenode4:
+          ansible_user: kubedeveloper
+    master:
+      hosts:
+        kubenode1:
+```
+
+If for example you want to set the IP in the `hosts.yml` file, set it like this:
+
+```yml
+all:
+  children:
+    nodes:
+      hosts:
+        kubenode1:
+          ansible_host: 10.80.1.98
+          ansible_user: kubedeveloper
+          apiserver_address: 10.80.1.98
+        kubenode2:
+          ansible_host: 10.80.1.97
+          ansible_user: kubedeveloper
+        kubenode3:
+          ansible_host: 10.80.1.96
+          ansible_user: kubedeveloper
+        kubenode4:
+          ansible_host: 10.80.1.95
+          ansible_user: kubedeveloper
+    master:
+      hosts:
+        kubenode1:
+```
+
+And if you're using one of the nodes as the _ansible_host_, set the `ansible_connection` as local:
+
+```yml
+all:
+  children:
+    nodes:
+      hosts:
+        kubenode1:
+          ansible_connection: local
+          ansible_user: kubedeveloper
+          apiserver_address: 10.80.1.98
+        kubenode2:
+          ansible_host: 10.80.1.97
+          ansible_user: kubedeveloper
+        kubenode3:
+          ansible_host: 10.80.1.96
+          ansible_user: kubedeveloper
+        kubenode4:
+          ansible_host: 10.80.1.95
+          ansible_user: kubedeveloper
+    master:
+      hosts:
+        kubenode1:
+```
 ## Passwordless SSH access.
 This is for easier access from the _ansible host_ to each _nodes_.
 
