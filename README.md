@@ -127,19 +127,31 @@ In `Ansible`, the variable `ansible_become_password` is used to store the `sudo`
 ##### Create the directory
 Since I'm not grouping my nodes in a specific directory (automatically under `all` group), we'll create a `group_vars/all` directory. create two files named `vars` and `vault`.
 
-The `vars` file:
+The `group_vars/all/vars` file:
 
 ```yml
 ansible_become_pass: "{{ vault_ansible_become_pass }}"
 ```
 
-And the `vault` file:
+And the `group_vars/all/vault` file:
 ```yml
-vault_ansible_become_pass: <the-actual-sudo-password>
+vault_ansible_become_pass: "<the-actual-sudo-password>"
 ```
 
 And then encrypt the `vault` file using:
 
 ```shell
 ansible-vault encrypt group_vars/all/vars
+```
+
+or for decrypting:
+
+```shell
+ansible-vault decrypt group_vars/all/vars
+```
+
+if you just want to view the content:
+
+```shell
+ansible-vault view group_vars/all/vars
 ```
