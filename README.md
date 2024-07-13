@@ -117,10 +117,10 @@ Define the text file containing the password. For example `.secret` inside `ansi
 vault_password_file=.secret
 ```
 
-Ansible will search for password inside this file, this password is used for accessing the (ansible vault)[https://docs.ansible.com/ansible/latest/vault_guide/index.html]
+Ansible will search for password inside this file, this password is used for accessing the [ansible vault](https://docs.ansible.com/ansible/latest/vault_guide/index.html).
 
 ### Storing each nodes become_password
-In `Ansible`, the variable `ansible_become_password` is used to store the `sudo` password. Since there's a possibility that each nodes have different password, it is better to store all the password in one file, and encrypt it, see (the official guide for building your inventory)[https://docs.ansible.com/ansible/latest/inventory_guide/intro_inventory.html].
+In `Ansible`, the variable `ansible_become_password` is used to store the `sudo` password. Since there's a possibility that each nodes have different password, it is better to store all the password in one file, and encrypt it, [see the official guide for building your inventory](https://docs.ansible.com/ansible/latest/inventory_guide/intro_inventory.html).
 
 #### In case all your nodes using the same password
 
