@@ -1,0 +1,3 @@
+./join-command
+group_vars/vault
+.secret

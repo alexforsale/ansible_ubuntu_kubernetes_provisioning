@@ -1,0 +1,93 @@
+---
+- hosts: all
+  become: True
+  tasks:
+    - name: update apt cache and upgrade
+      ansible.builtin.apt:
+        upgrade: True
+        update_cache: True
+        cache_valid_time: 3600
+
+    - name: install gnupg2 (dependency for ansible apt-key)
+      ansible.builtin.apt:
+        name: gnupg2
+        state: present
+
+    - name: install docker.io
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+
+    - name: Kubernetes repository
+      block:
+        - name: kubernetes apt
+          ansible.builtin.apt_key:
+            url: https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key
+            state: present
+
+        # change the v1.30 to the version you want
+        - name: add kubernetes repo
+          ansible.builtin.apt_repository:
+            repo: "deb https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /"
+            state: present
+
+        - name: update apt cache
+          ansible.builtin.apt:
+            update_cache: True
+
+        - name: install kubernetes packages
+          ansible.builtin.apt:
+            pkg:
+              - kubelet
+              - kubeadm
+              - kubectl
+
+        - name: disable swap from /etc/fstab
+          mount:
+            name: "{{ item }}"
+            fstype: swap
+            state: absent
+          with_items:
+            - swap
+            - none
+
+        - name: Disable swap
+          command: swapoff -a
+          when: ansible_swaptotal_mb > 0
+
+    - name: Initialize the Kubernetes cluster using kubeadm command
+      when: inventory_hostname in groups['master']
+      command: kubeadm init --apiserver-advertise-address="{{ apiserver_address }}" --pod-network-cidr=10.244.0.0/16
+      ignore_errors: True
+
+    - name: setup kubernetes for the running user
+      command: "{{ item }}"
+      when: inventory_hostname in groups['master']
+      with_items:
+        - mkdir -p /home/{{ ansible_user }}/.kube
+        - cp /etc/kubernetes/admin.conf /home/{{ ansible_user }}/.kube/config
+        - chown {{ ansible_user }}:{{ ansible_user }} /home/{{ ansible_user }}/.kube/config
+
+    - name: Retrieve Kubernetes join command that is used to join worker node(s)
+      become: False
+      when: inventory_hostname in groups['master']
+      command: kubeadm token create --print-join-command
+      register: join_command
+
+    - name: Attach kubeadm join command to a file on Ansible control node
+      when: inventory_hostname in groups['master']
+      local_action: "copy content='{{ join_command.stdout_lines[0] }}' dest=join-command"
+
+    - name: Copy the join-command file created above to worker node
+      when: inventory_hostname in groups['nodes']
+      copy: src=join-command dest=/tmp/kubeadm-join.sh mode=0777
+
+    - name: Install Flannel pod network
+      become: false
+      when: inventory_hostname in groups['master']
+      command: kubectl apply -f https://github.com/coreos/flannel/raw/master/Documentation/kube-flannel.yml
+
+    - name: Join the worker node to cluster
+      when: inventory_hostname in groups['nodes'] and not inventory_hostname in groups['master']
+      command: sh /tmp/kubeadm-join.sh
+      ignore_errors: True
